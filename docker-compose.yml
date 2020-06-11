@@ -1,0 +1,46 @@
+version: "3"
+services:
+  frs:
+    build: frs
+    volumes:
+      - frs-logs:/home/frs/frs/logs/
+    ports:
+      - 9050:9050
+      - 5000:5000
+    networks:
+      - frs
+    depends_on:
+      - db
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+
+    restart: unless-stopped
+    #entrypoint: ["/home/frs/wait-for-it.sh", "db:5432", "--", "node", "/home/frs/frs/app.js"]
+    entrypoint: ["node", "/home/frs/frs/app.js"]
+    #entrypoint: "/bin/bash"
+  db:
+    image: postgres:10-alpine
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - frs
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=frs
+  redis:
+    image: redis:alpine
+    networks:
+      - frs
+    restart: unless-stopped
+    command: --maxclients 500 --tcp-backlog 128 --maxmemory-policy allkeys-lru --save ""
+
+networks:
+  frs:
+
+volumes:
+  db-data: 
+  frs-logs:
